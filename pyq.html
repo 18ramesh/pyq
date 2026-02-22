@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VTU PYQ Portal</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- FirebaseUI Auth CSS -->
+    <link type="text/css" rel="stylesheet" href="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.css" />
+    
+    <style>
+    body{
+        margin:0;
+        font-family: Arial;
+        background: linear-gradient(135deg,#4e73df,#1cc88a);
+        color:white;
+        text-align:center;
+    }
+
+    .page{
+        display:none;
+        padding:50px 20px;
+    }
+
+    .active{
+        display:block;
+    }
+
+    button{
+        padding:15px 30px;
+        margin:10px;
+        font-size:18px;
+        border:none;
+        border-radius:8px;
+        cursor:pointer;
+        background:white;
+        color:#4e73df;
+        font-weight:bold;
+    }
+
+    button:hover{
+        background:#f8f9fc;
+    }
+
+    .subject-box{
+        background:white;
+        color:black;
+        margin:10px auto;
+        padding:10px;
+        border-radius:6px;
+        width:80%;
+    }
+
+    /* Styles for Firebase Auth UI container */
+    #firebaseui-auth-container {
+      margin-top: 20px;
+    }
+    #sign-out {
+      margin-top: 20px;
+      background-color: #dc3545; /* Red color for sign-out button */
+      color: white;
+    }
+    #login-info {
+      margin-top: 20px;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 20px;
+      border-radius: 8px;
+    }
+    #login-info dt {
+        font-weight: bold;
+        float: left;
+        clear: left;
+        width: 100px;
+        text-align: right;
+        margin-right: 10px;
+    }
+    #login-info dd {
+        margin-left: 110px;
+        text-align: left;
+    }
+    </style>
+</head>
+
+<body>
+
+<!-- PAGE 1 -->
+<div class="page active" id="schemePage">
+    <h1>VTU PYQ Portal</h1>
+    <h2>Select Scheme</h2>
+    <button onclick="selectScheme('2022')">2022 Scheme</button>
+    <button onclick="selectScheme('2025')">2025 Scheme</button>
+</div>
+
+<!-- PAGE 2 -->
+<div class="page" id="branchPage">
+    <h2>Select Branch</h2>
+    <button onclick="selectBranch('CSE')">CSE</button>
+    <button onclick="selectBranch('CSBS')">CSBS</button>
+    <button onclick="selectBranch('ECE')">ECE</button>
+</div>
+
+<!-- PAGE 3 -->
+<div class="page" id="semPage">
+    <h2>Select Semester</h2>
+    <button onclick="selectSem(3)">Sem 3</button>
+    <button onclick="selectSem(4)">Sem 4</button>
+    <button onclick="selectSem(5)">Sem 5</button>
+    <button onclick="selectSem(6)">Sem 6</button>
+    <button onclick="selectSem(7)">Sem 7</button>
+</div>
+
+<!-- PAGE 4 -->
+<div class="page" id="subjectPage">
+    <h2>Subjects</h2>
+    <div id="subjectsList"></div>
+</div>
+
+<!-- FirebaseUI Auth container for displaying the authentication UI -->
+<div id="firebaseui-auth-container"></div>
+
+<!-- Sign Out button (initially hidden) -->
+<button id="sign-out" hidden=true>Sign Out</button>
+
+<!-- Div to display user login information (initially hidden) -->
+<div id="login-info" hidden=true>
+  <h2>Login info:</h2>
+  <dl>
+    <dt>Name:</dt><dd id="user-name"></dd>
+    <dt>Email:</dt><dd id="user-email"></dd>
+    <dt>UID:</dt><dd id="user-uid"></dd>
+  </dl>
+</div>
+
+
+<script>
+
+let selectedScheme = "";
+let selectedBranch = "";
+let selectedSem = "";
+
+/* DATA */
+const data = {
+CSE:{
+3:["BCS301 – Mathematics for Computer Science",
+"BCS302 – Digital Design & Computer Oraganization",
+"BCS303 – Operating Systems",
+"BCS304 – Data Structures and Applications",
+"BCS306A – Object oriented Programming with java"],
+ 
+4:["BCS401 – Analysis & Design of Algorithms",
+"BCS402 – Microcontrollers",
+"BCS403 – Database Management Systems",
+"BCS405A – Discrete Mathematical structures",
+"BBOC407 – Biology for Engineers",
+"BCS405B – Graph Theory"
+],
+5:["BCS501 – Software Engineering",
+"BCS502 – Computer Networks",
+"BCS503 – Theory of Computation",
+"BRMK557 – Software Engineering"
+],
+6:["BCS601 – Cloud Computing",
+"BCS602 – Machine Learning",
+"BCS613A – Blockchain Technology"],
+7:["BCS701 – Internet of things",
+"BIS701 – Big Data Analytics",
+"BCS702– Parallel Computing",
+"BCS701 – Cryptography and network"],
+},
+CSBS:{
+
+4:["BCB401 – Financial Management",
+],
+5:["BCB501 – Fundamental of Management",
+   "BCB515A –Marketing research and marketing Mangement"
+],
+6:["BCB601 – AI for Business"],
+
+},
+ECE:{
+3:["BEC301 – Mathematics for ECE",
+"BEC302 – Digital System Design Using Verilog",
+"BEC304 – Network Analysis",
+"BECL306 – Computer Oraganization and Architecture"],
+4:["BEC401 – Electromagnetics theory",
+   "BEC402 – Principles of Communication System",
+    "BEC403 – Control System",
+    "BEC405A – Microcontrollers",
+    "BBOK407–Biology for Engineers"
+],
+5:["BEC501 – Technological Innovation and mangement Enterprenurship",
+    "BEC502 –  Digital Signal Processing",
+    "BEC503 – Digital Communication",
+],
+6:["BEC601 – Embedded system design",
+    "BEC602 – VLSI Design and Testing",
+],
+7:["BEC701 – Microwave engineering and antenna Theory",
+    "BEC702 – computer Networks ANd protocol",
+    "BEC703 – wireless Communication Systems"
+],
+}
+};
+
+/* PAGE SWITCH */
+function showPage(id){
+    document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+    document.getElementById(id).classList.add("active");
+}
+
+function selectScheme(scheme){
+    selectedScheme = scheme;
+    showPage("branchPage");
+}
+
+function selectBranch(branch){
+    selectedBranch = branch;
+    showPage("semPage");
+}
+
+function selectSem(sem){
+    selectedSem = sem;
+    showSubjects();
+    showPage("subjectPage");
+}
+
+function showSubjects(){
+    const list = document.getElementById("subjectsList");
+    list.innerHTML = "";
+
+    const subjects = data[selectedBranch][selectedSem];
+
+    subjects.forEach(sub=>{
+        const div = document.createElement("div");
+        div.className="subject-box";
+        div.innerText=sub;
+        list.appendChild(div);
+    });
+}
+
+</script>
+
+<!-- Firebase SDKs (Modular) -->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-analytics.js";
+  import { getAuth, GoogleAuthProvider, EmailAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.9.0/firebase-auth.js";
+  
+  // FirebaseUI (Note: this is not a modular import for the UI library itself, it's a global script)
+  // Ensure firebase-ui-auth.js is loaded before this script if you need to access firebaseui globally
+</script>
+
+<!-- FirebaseUI library (global script, should be loaded after Firebase core but before your modular script) -->
+<script src="https://www.gstatic.com/firebasejs/ui/6.0.1/firebase-ui-auth.js"></script>
+
+<script type="module">
+  // Your web app's Firebase configuration
+  const firebaseConfig = {
+    apiKey: "AIzaSyDc0CXWQCEhWVTh_ORDqJ0apI8ovOpw7eE",
+    authDomain: "vtu-pyq.firebaseapp.com",
+    projectId: "vtu-pyq",
+    storageBucket: "vtu-pyq.firebasestorage.app",
+    messagingSenderId: "4694822198",
+    appId: "1:4694822198:web:9716e0e6620df2b068b797",
+    measurementId: "G-DJLMSSG6FR",
+    // Add databaseURL if you are using Realtime Database, otherwise it's not strictly necessary for this config
+    // databaseURL: "https://vtu-pyq-default-rtdb.firebaseio.com", 
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  const auth = getAuth(app); // Get the Auth instance
+
+  // Initialize the FirebaseUI Widget for Firebase.
+  // Note: 'firebaseui' is a global object, ensure firebase-ui-auth.js is loaded
+  const ui = new firebaseui.auth.AuthUI(auth); 
+
+  // FirebaseUI configuration
+  const uiConfig = {
+    callbacks: {
+      signInSuccessWithAuthResult: function(authResult, redirectUrl) {
+        // User successfully signed in.
+        console.log("Sign-in successful!");
+        document.getElementById('firebaseui-auth-container').hidden = true;
+        document.getElementById('sign-out').hidden = false;
+        document.getElementById('login-info').hidden = false;
+        updateLoginInfo(authResult.user);
+        return false; // Do not redirect
+      },
+      uiShown: function() {
+        // The widget is rendered.
+        // Hide the loader. (Assuming you have a loader div, if not, you can remove this line)
+        // document.getElementById('loader').hidden = true; 
+      }
+    },
+    signInFlow: 'popup',
+    signInOptions: [
+      // List of OAuth providers supported.
+      GoogleAuthProvider.PROVIDER_ID, // Modular provider
+      EmailAuthProvider.PROVIDER_ID,   // Modular provider
+      // You can add more providers here, e.g., Facebook, Twitter, etc.
+    ],
+    tosUrl: 'https://www.example.com/terms', // Replace with your Terms of Service URL
+    privacyPolicyUrl: 'https://www.example.com/privacy' // Replace with your Privacy Policy URL
+  };
+
+  // Handle authentication state changes
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // User is signed in.
+      document.getElementById('firebaseui-auth-container').hidden = true;
+      document.getElementById('sign-out').hidden = false;
+      document.getElementById('login-info').hidden = false;
+      updateLoginInfo(user);
+    } else {
+      // User is signed out.
+      document.getElementById('firebaseui-auth-container').hidden = false;
+      document.getElementById('sign-out').hidden = true;
+      document.getElementById('login-info').hidden = true;
+      document.getElementById('user-name').innerText = '';
+      document.getElementById('user-email').innerText = '';
+      document.getElementById('user-uid').innerText = '';
+      ui.start('#firebaseui-auth-container', uiConfig);
+    }
+  });
+
+  // Sign out function
+  document.getElementById('sign-out').addEventListener('click', function() {
+    signOut(auth).then(() => { // Use modular signOut
+      console.log('Signed Out');
+    }).catch((error) => {
+      console.error('Sign Out Error', error);
+    });
+  });
+
+  // Function to update user info display
+  function updateLoginInfo(user) {
+    document.getElementById('user-name').innerText = user.displayName || 'N/A';
+    document.getElementById('user-email').innerText = user.email || 'N/A';
+    document.getElementById('user-uid').innerText = user.uid || 'N/A';
+  }
+
+  // Initial start for FirebaseUI if no user is signed in
+  if (!auth.currentUser) {
+    ui.start('#firebaseui-auth-container', uiConfig);
+  }
+
+</script>
+
+</body>
+</html>
